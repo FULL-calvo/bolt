@@ -1,0 +1,122 @@
+{
+  "users": [
+    {
+      "id": "u001",
+      "role": "seller",
+      "name": "Camila Andrade",
+      "email": "camila@techgadgets.com",
+      "password": "hashed_password_123",
+      "profile_image": "https://cdn.productpitstop.com/profiles/camila.jpg",
+      "bio": "Apaixonada por tecnologia e unboxings! 🎥📦",
+      "phone": "+55 11 98888-1234",
+      "address": {
+        "street": "Av. Paulista, 1234",
+        "city": "São Paulo",
+        "state": "SP",
+        "zip": "01310-200",
+        "country": "Brasil"
+      },
+      "preferences": [
+        "tecnologia",
+        "gadgets",
+        "eletrônicos"
+      ],
+      "store_name": "Tech Gadgets BR",
+      "store_description": "Produtos tech direto do fornecedor com unboxings reais!",
+      "products": [
+        {
+          "id": "p101",
+          "title": "Fone Bluetooth XZ12",
+          "description": "Fone sem fio com cancelamento de ruído e bateria de 40h.",
+          "price": 159.9,
+          "stock": 87,
+          "category": "eletrônicos",
+          "video_url": "https://cdn.productpitstop.com/videos/fone-xz12.mp4",
+          "thumbnail": "https://cdn.productpitstop.com/thumbs/fone-xz12.jpg",
+          "likes": 432,
+          "comments": 29,
+          "posted_at": "2025-08-03T15:45:00Z"
+        },
+        {
+          "id": "p102",
+          "title": "Smartwatch MaxFit",
+          "description": "Monitoramento cardíaco, passos, sono e muito mais.",
+          "price": 249.0,
+          "stock": 56,
+          "category": "wearables",
+          "video_url": "https://cdn.productpitstop.com/videos/smartwatch-maxfit.mp4",
+          "thumbnail": "https://cdn.productpitstop.com/thumbs/smartwatch-maxfit.jpg",
+          "likes": 528,
+          "comments": 47,
+          "posted_at": "2025-08-01T11:30:00Z"
+        }
+      ],
+      "analytics": {
+        "views_total": 7123,
+        "sales_total": 89,
+        "revenue_total": 15789.4
+      },
+      "messages": [
+        {
+          "from_user_id": "u002",
+          "message": "Oi Camila! O smartwatch é resistente à água?",
+          "timestamp": "2025-08-04T09:12:00Z",
+          "read": true
+        }
+      ]
+    },
+    {
+      "id": "u002",
+      "role": "buyer",
+      "name": "Lucas Ferreira",
+      "email": "lucas.ferreira@gmail.com",
+      "password": "hashed_password_456",
+      "profile_image": "https://cdn.productpitstop.com/profiles/lucas.jpg",
+      "phone": "+55 21 97777-4567",
+      "address": {
+        "street": "Rua das Flores, 789",
+        "city": "Rio de Janeiro",
+        "state": "RJ",
+        "zip": "22031-070",
+        "country": "Brasil"
+      },
+      "preferences": [
+        "tecnologia",
+        "fitness",
+        "acessórios"
+      ],
+      "wishlist": [
+        "p102"
+      ],
+      "cart": [
+        {
+          "product_id": "p101",
+          "quantity": 1,
+          "added_at": "2025-08-04T20:10:00Z"
+        }
+      ],
+      "orders": [
+        {
+          "order_id": "o7891",
+          "product_id": "p102",
+          "quantity": 1,
+          "price_paid": 249.0,
+          "purchased_at": "2025-08-03T18:00:00Z",
+          "status": "entregue"
+        }
+      ],
+      "watched_videos": [
+        "p102",
+        "p101"
+      ],
+      "messages": [
+        {
+          "to_user_id": "u001",
+          "message": "Oi Camila! O smartwatch é resistente à água?",
+          "timestamp": "2025-08-04T09:12:00Z",
+          "read": true
+        }
+      ]
+    }
+  ]
+}
