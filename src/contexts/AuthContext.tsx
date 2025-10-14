@@ -495,61 +495,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCart([]);
   };
 
-  const updateProductComments = (productId: string, added: boolean) => {
-    setProductComments(prev => ({
-      ...prev,
-      [productId]: (prev[productId] || 0) + (added ? 1 : 0)
-    }));
-  };
-
-  const toggleWishlist = async (productId: string) => {
-    if (!user || !profile) return;
-
-    const currentWishlist = profile.wishlist || [];
-    const isInWishlist = currentWishlist.includes(productId);
-    const newWishlist = isInWishlist
-      ? currentWishlist.filter(id => id !== productId)
-      : [...currentWishlist, productId];
-
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ wishlist: newWishlist })
-        .eq('id', user.id);
-
-      if (error) throw error;
-      
-      setProfile(prev => prev ? { ...prev, wishlist: newWishlist } : null);
-    } catch (error) {
-      console.error('Error updating wishlist:', error);
-    }
-  };
-
   const toggleProductLike = async (productId: string) => {
     if (!user) return;
-    
+
     const isLiked = userLikes.has(productId);
-    
+
     try {
       if (isLiked) {
-        // Remove like
-        await supabase
-          .from('product_likes')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('product_id', productId);
-        
         setUserLikes(prev => {
           const newSet = new Set(prev);
           newSet.delete(productId);
           return newSet;
         });
       } else {
-        // Add like
-        await supabase
-          .from('product_likes')
-          .insert({ user_id: user.id, product_id: productId });
-        
         setUserLikes(prev => new Set([...prev, productId]));
       }
     } catch (error) {
@@ -557,85 +515,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const addProductComment = async (productId: string, comment: string) => {
-    if (!user) throw new Error('No user logged in');
-
-    try {
-      const { data, error } = await supabase
-        .from('product_comments')
-        .insert({
-          user_id: user.id,
-          product_id: productId,
-          comment
-        })
-        .select(`
-          *,
-          user:profiles(full_name, profile_image)
-        `)
-        .single();
-
-      if (error) throw error;
-
-      setProductComments(prev => [data, ...prev]);
-      return data;
-    } catch (error) {
-      console.error('Error adding comment:', error);
-      throw error;
-    }
-  };
-
-  const getProductComments = async (productId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('product_comments')
-        .select(`
-          *,
-          user:profiles(full_name, profile_image)
-        `)
-        .eq('product_id', productId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-      return [];
-    }
-  };
-
-  const getProductLikesCount = async (productId: string) => {
-    try {
-      const { count, error } = await supabase
-        .from('product_likes')
-        .select('*', { count: 'exact', head: true })
-        .eq('product_id', productId);
-
-      if (error) throw error;
-      return count || 0;
-    } catch (error) {
-      console.error('Error fetching likes count:', error);
-      return 0;
-    }
-  };
-
-  // Load user likes on login
-  const loadUserLikes = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('product_likes')
-        .select('product_id')
-        .eq('user_id', userId);
-
-      if (error) throw error;
-      
-      const likedProducts = new Set(data?.map(like => like.product_id) || []);
-      setUserLikes(likedProducts);
-    } catch (error) {
-      console.error('Error loading user likes:', error);
-    }
-  };
-
-  // Update the toggleWishlist function to use the new like system
   const toggleWishlist = async (productId: string) => {
     if (!user || !profile) return;
 
@@ -652,17 +531,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('id', user.id);
 
       if (error) throw error;
-      
-      setProfile(prev => prev ? { ...prev, wishlist: newWishlist } : null);
 
-      // Also toggle the product like
+      setProfile(prev => prev ? { ...prev, wishlist: newWishlist } : null);
       await toggleProductLike(productId);
     } catch (error) {
       console.error('Error updating wishlist:', error);
     }
   };
 
-  // Legacy functions for backward compatibility
   const updateProductLikes = (productId: string, liked: boolean) => {
     if (liked) {
       toggleProductLike(productId);
@@ -670,28 +546,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateProductComments = (productId: string, added: boolean) => {
-    // This is now handled by addProductComment
-  };
-
-  // Clean up old functions
-  const persistLike = async (productId: string, liked: boolean) => {
-    if (!user) return;
-    
-    try {
-      if (liked) {
-        await supabase
-          .from('product_likes')
-          .insert({ user_id: user.id, product_id: productId });
-      } else {
-        await supabase
-          .from('product_likes')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('product_id', productId);
-      }
-    } catch (error) {
-      console.error('Error persisting like:', error);
-    }
+    setProductComments(prev => ({
+      ...prev,
+      [productId]: (prev[productId] || 0) + (added ? 1 : 0)
+    }));
   };
 
   const value = {
@@ -707,14 +565,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateCartQuantity,
     removeFromCart,
     addOrder: addOrderFunc,
-    userLikes,
-    toggleProductLike,
+    productLikes: Object.fromEntries([...userLikes].map(id => [id, 1])),
     updateProductLikes,
-    productComments,
+    productComments: {},
     updateProductComments,
-    addProductComment,
-    getProductComments,
-    getProductLikesCount,
     toggleWishlist,
     signup,
     login,

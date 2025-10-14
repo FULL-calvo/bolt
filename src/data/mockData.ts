@@ -11,8 +11,7 @@ export const mockUsers: User[] = [
     phone: "+55 11 98888-1234",
     store_name: "Tech Gadgets BR",
     store_description: "Produtos tech direto do fornecedor com unboxings reais!",
-    preferences: ["tecnologia", "gadgets", "eletrônicos"],
-    profile_image: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400"
+    preferences: ["tecnologia", "gadgets", "eletrônicos"]
   },
   {
     id: "u002",

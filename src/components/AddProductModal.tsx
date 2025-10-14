@@ -67,26 +67,17 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Add product to database
-      const { error } = await addProduct({
+      await addProduct({
         title: formData.title,
         description: formData.description,
         price: parseFloat(formData.price),
         stock: parseInt(formData.stock),
         category: formData.category,
         image_url: thumbnailFile ? URL.createObjectURL(thumbnailFile) : 'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg?auto=compress&cs=tinysrgb&w=800',
-        video_url: videoFile ? URL.createObjectURL(videoFile) : 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
+        video_url: videoFile ? URL.createObjectURL(videoFile) : 'https://images.pexels.com/photos/1092671/pexels-photo-1092671.jpeg?auto=compress&cs=tinysrgb&w=800',
         is_active: true
       });
 
-      if (error) {
-        throw error;
-      }
-      
-      // Reset form
       setFormData({
         title: '',
         description: '',
@@ -98,15 +89,15 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
       });
       setThumbnailFile(null);
       setVideoFile(null);
-      
-      // Notify parent component
+
       if (onProductAdded) {
         onProductAdded();
       }
-      
+
       onClose();
     } catch (error) {
       console.error('Erro ao adicionar produto:', error);
+      alert('Erro ao adicionar produto. Tente novamente.');
     } finally {
       setIsLoading(false);
     }

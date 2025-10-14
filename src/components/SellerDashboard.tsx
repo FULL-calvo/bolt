@@ -13,7 +13,7 @@ interface SellerDashboardProps {
 }
 
 export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onBack }) => {
-  const { user, profile, sellerData, products, backToBuyer } = useAuth();
+  const { user, profile, sellerData, products, backToBuyer, deleteProduct } = useAuth();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'store'>('dashboard');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showEditProduct, setShowEditProduct] = useState(false);
@@ -72,10 +72,15 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onBack }) => {
     setShowEditProduct(true);
   };
 
-  const handleDeleteProduct = (productId: string) => {
+  const handleDeleteProduct = async (productId: string) => {
     if (confirm('Tem certeza que deseja excluir este produto?')) {
-      // Implement delete logic here
-      console.log('Deleting product:', productId);
+      try {
+        await deleteProduct(productId);
+        alert('Produto excluído com sucesso!');
+      } catch (error) {
+        console.error('Erro ao deletar produto:', error);
+        alert('Erro ao excluir produto. Tente novamente.');
+      }
     }
   };
 
@@ -270,7 +275,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onBack }) => {
               </button>
             </div>
 
-            {mockProducts.filter(p => p.seller?.id === user?.id).length === 0 ? (
+            {products.length === 0 ? (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
                 <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h4 className="text-lg font-semibold text-gray-600 mb-2">Nenhum produto cadastrado</h4>
@@ -286,11 +291,11 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onBack }) => {
               </div>
             ) : (
               <div className="grid gap-4">
-                {mockProducts.filter(p => p.seller?.id === user?.id).map((product) => (
+                {products.map((product) => (
                   <div key={product.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                     <div className="flex items-center space-x-4">
                       <img
-                        src={product.thumbnail}
+                        src={product.image_url || 'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg?auto=compress&cs=tinysrgb&w=200'}
                         alt={product.title}
                         className="w-16 h-16 rounded-lg object-cover"
                       />
@@ -298,14 +303,16 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onBack }) => {
                         <h4 className="font-semibold text-gray-800">{product.title}</h4>
                         <p className="text-sm text-gray-600 line-clamp-2">{product.description}</p>
                         <div className="flex items-center space-x-4 mt-2">
-                          <span className="text-lg font-bold text-purple-600">{formatPrice(product.price)}</span>
+                          <span className="text-lg font-bold text-purple-600">{formatPrice(Number(product.price))}</span>
                           <span className="text-sm text-gray-500">Estoque: {product.stock}</span>
-                          <span className="text-sm text-gray-500">{product.likes} curtidas</span>
+                          <span className={`text-xs px-2 py-1 rounded-full ${product.is_active ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'}`}>
+                            {product.is_active ? 'Ativo' : 'Inativo'}
+                          </span>
                         </div>
                       </div>
                       <div className="flex flex-col space-y-2">
                         <button
-                          onClick={() => handleEditProduct(product)}
+                          onClick={() => handleEditProduct(product as any)}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         >
                           <Edit3 className="w-4 h-4" />
