@@ -24,7 +24,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  const { signup } = useAuth();
+  const { signUp } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -50,9 +50,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     setIsLoading(true);
 
     try {
-      await signup(formData.email, formData.password, formData.name, 'buyer');
-      onClose();
-      setFormData({ name: '', email: '', password: '', confirmPassword: '' });
+      const { error } = await signUp(formData.email, formData.password, formData.name, 'buyer');
+      
+      if (!error) {
+        onClose();
+        setFormData({ name: '', email: '', password: '', confirmPassword: '' });
+      } else {
+        setError(error.message || 'Erro ao criar conta. Tente novamente.');
+      }
     } catch (err) {
       setError('Erro ao criar conta. Tente novamente.');
     } finally {

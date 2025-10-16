@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, CreditCard as Edit3, Save, X, Camera, ArrowLeft, Heart, ShoppingBag, Package, Store, Upload } from 'lucide-react';
+import { User, CreditCard as Edit3, Save, X, Camera, ArrowLeft, Heart, ShoppingBag, Package, Store } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { mockProducts } from '../data/mockData';
@@ -11,22 +11,19 @@ interface ProfilePageProps {
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
-  const { user, profile, updateProfile, orders } = useAuth();
+  const { user, profile, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [activeSection, setActiveSection] = useState<'profile' | 'orders' | 'wishlist'>('profile');
   const [showBecomeSellerModal, setShowBecomeSellerModal] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || '',
     email: profile?.email || '',
     phone: profile?.phone || '',
-    bio: profile?.bio || '',
-    profile_image: profile?.profile_image || ''
+    bio: profile?.bio || ''
   });
 
-  const wishlistProducts = mockProducts.filter(p => profile?.wishlist?.includes(p.id));
-  const userOrders = orders || [];
+  const wishlistProducts = mockProducts.filter(p => user?.wishlist?.includes(p.id));
+  const userOrders = user?.orders || [];
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -42,28 +39,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
     }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-      setFormData(prev => ({
-        ...prev,
-        profile_image: file as any
-      }));
-    }
-  };
-
   const handleSave = () => {
-    const updateData = { ...formData };
-    if (selectedFile) {
-      updateData.profile_image = selectedFile as any;
-    }
-    updateProfile(updateData);
+    updateProfile(formData);
     setIsEditing(false);
-    setSelectedFile(null);
-    setPreviewUrl(null);
   };
 
   const handleCancel = () => {
@@ -71,12 +49,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
       full_name: profile?.full_name || '',
       email: profile?.email || '',
       phone: profile?.phone || '',
-      bio: profile?.bio || '',
-      profile_image: profile?.profile_image || ''
+      bio: profile?.bio || ''
     });
     setIsEditing(false);
-    setSelectedFile(null);
-    setPreviewUrl(null);
   };
 
   // If user is a seller, show seller dashboard
@@ -135,20 +110,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
           <div className="text-center">
             <div className="relative inline-block">
               <img
-                src={previewUrl || profile.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.full_name)}&background=8b5cf6&color=fff&size=120`}
+                src={profile.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.full_name)}&background=8b5cf6&color=fff&size=120`}
                 alt={profile.full_name}
                 className="w-24 h-24 rounded-full mx-auto"
               />
               {isEditing && (
-                <label className="absolute bottom-0 right-0 bg-purple-500 text-white p-2 rounded-full hover:bg-purple-600 transition-colors cursor-pointer">
+                <button className="absolute bottom-0 right-0 bg-purple-500 text-white p-2 rounded-full hover:bg-purple-600 transition-colors">
                   <Camera className="w-4 h-4" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                </label>
+                </button>
               )}
             </div>
             {!isEditing && (
@@ -217,42 +186,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                 <p className="px-4 py-3 bg-gray-50 rounded-lg text-gray-800">
                   {profile.phone || 'Não informado'}
                 </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Foto de Perfil
-              </label>
-              {isEditing ? (
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-4">
-                    <img
-                      src={previewUrl || profile.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.full_name)}&background=8b5cf6&color=fff&size=80`}
-                      alt="Preview"
-                      className="w-16 h-16 rounded-full object-cover"
-                    />
-                    <label className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg cursor-pointer transition-colors">
-                      <Upload className="w-4 h-4 text-gray-600" />
-                      <span className="text-sm text-gray-700">Escolher foto</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                  {selectedFile && (
-                    <p className="text-xs text-green-600">
-                      Arquivo selecionado: {selectedFile.name}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="px-4 py-3 bg-gray-50 rounded-lg">
-                  <p className="text-gray-600 text-sm">Clique em "Editar" para alterar sua foto</p>
-                </div>
               )}
             </div>
 

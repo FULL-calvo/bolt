@@ -1,123 +1,68 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
-import { CartItem } from '../types';
-import { mockProducts } from '../data/mockData';
-
-interface Profile {
-  id: string;
-  full_name: string;
-  role: 'buyer' | 'seller';
-  email: string;
-  phone?: string;
-  profile_image?: string;
-  bio?: string;
-  wishlist?: string[];
-  created_at: string;
-  updated_at: string;
-}
-
-interface SellerData {
-  id: number;
-  user_id: string;
-  store_name: string;
-  store_description?: string;
-  store_address?: string;
-  payment_info?: any;
-  is_verified: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-interface Product {
-  id: string;
-  seller_id: string;
-  title: string;
-  description: string;
-  price: number;
-  stock: number;
-  category: string;
-  image_url?: string;
-  video_url?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-interface Order {
-  id: string;
-  buyer_id: string;
-  seller_id: string;
-  product_id: string;
-  quantity: number;
-  unit_price: number;
-  total_price: number;
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
-  shipping_address?: any;
-  created_at: string;
-  updated_at: string;
-}
-
-interface Message {
-  id: string;
-  from_user_id: string;
-  to_user_id: string;
-  product_id?: string;
-  message: string;
-  is_read: boolean;
-  message_type: 'direct' | 'product_inquiry';
-  created_at: string;
-}
+import { supabase, Profile, Seller, Product, Order, Message, CartItem } from '../lib/supabase';
 
 interface AuthContextType {
   user: User | null;
   profile: Profile | null;
-  sellerData: SellerData | null;
-  products: Product[];
-  orders: Order[];
-  messages: Message[];
-  cart: CartItem[];
+  seller: Seller | null;
+  session: Session | null;
   loading: boolean;
-  addToCart: (productId: string) => void;
-  updateCartQuantity: (productId: string, quantity: number) => void;
-  removeFromCart: (productId: string) => void;
-  addOrder: (orderData: { product_id: string; quantity: number; price_paid: number; status: 'pendente' | 'processando' | 'enviado' | 'entregue' | 'cancelado'; }) => Promise<void>;
-  productLikes: Record<string, number>;
-  updateProductLikes: (productId: string, liked: boolean) => void;
-  productComments: Record<string, number>;
-  updateProductComments: (productId: string, added: boolean) => void;
-  toggleWishlist: (productId: string) => void;
-  signup: (email: string, password: string, fullName: string, role: 'buyer' | 'seller') => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  updateProfile: (updates: Partial<Profile>) => Promise<void>;
-  becomeSeller: (storeName: string, storeDescription?: string) => Promise<void>;
-  backToBuyer: () => Promise<void>;
-  updateSellerData: (updates: Partial<SellerData>) => Promise<void>;
-  addProduct: (product: Omit<Product, 'id' | 'seller_id' | 'created_at' | 'updated_at'>) => Promise<void>;
-  updateProduct: (id: string, updates: Partial<Product>) => Promise<void>;
-  deleteProduct: (id: string) => Promise<void>;
-  sendMessage: (recipientId: string, message: string, productId?: string) => Promise<void>;
-  markMessageAsRead: (messageId: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, role: 'buyer' | 'seller') => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signOut: () => Promise<void>;
+  updateProfile: (updates: Partial<Profile>) => Promise<{ error: any }>;
+  createSellerProfile: (storeData: Partial<Seller>) => Promise<{ error: any }>;
+  updateSellerProfile: (updates: Partial<Seller>) => Promise<{ error: any }>;
+  switchToNormalUser: () => Promise<{ error: any }>;
+  // Products
+  products: Product[];
+  addProduct: (product: Omit<Product, 'id' | 'seller_id' | 'created_at' | 'updated_at'>) => Promise<{ error: any }>;
+  updateProduct: (id: string, updates: Partial<Product>) => Promise<{ error: any }>;
+  deleteProduct: (id: string) => Promise<{ error: any }>;
+  fetchProducts: () => Promise<void>;
+  // Cart
+  cartItems: CartItem[];
+  addToCart: (productId: string, quantity?: number) => Promise<{ error: any }>;
+  updateCartQuantity: (productId: string, quantity: number) => Promise<{ error: any }>;
+  removeFromCart: (productId: string) => Promise<{ error: any }>;
+  clearCart: () => Promise<{ error: any }>;
+  // Orders
+  orders: Order[];
+  createOrder: (items: { productId: string; quantity: number }[], shippingAddress?: any) => Promise<{ error: any }>;
+  fetchOrders: () => Promise<void>;
+  // Messages
+  messages: Message[];
+  sendMessage: (toUserId: string, message: string, productId?: string) => Promise<{ error: any }>;
+  fetchMessages: () => Promise<void>;
+  markMessageAsRead: (messageId: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [sellerData, setSellerData] = useState<SellerData | null>(null);
+  const [seller, setSeller] = useState<Seller | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [userLikes, setUserLikes] = useState<Set<string>>(new Set());
-  const [productComments, setProductComments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
@@ -127,19 +72,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setSession(session);
       setUser(session?.user ?? null);
+      
       if (session?.user) {
-        fetchProfile(session.user.id);
+        await fetchProfile(session.user.id);
       } else {
         setProfile(null);
-        setSellerData(null);
+        setSeller(null);
         setProducts([]);
+        setCartItems([]);
         setOrders([]);
         setMessages([]);
-        setCart([]);
-        setProductLikes({});
-        setProductComments({});
         setLoading(false);
       }
     });
@@ -149,8 +94,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (userId: string) => {
     try {
-      setLoading(true);
-      
       // Fetch profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -161,72 +104,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (profileError) throw profileError;
       setProfile(profileData);
 
-      // If seller, fetch seller data and products
+      // If seller, fetch seller data
       if (profileData.role === 'seller') {
-        const { data: sellerInfo, error: sellerError } = await supabase
+        const { data: sellerData } = await supabase
           .from('sellers')
           .select('*')
           .eq('user_id', userId)
           .single();
-
-        if (sellerError && sellerError.code !== 'PGRST116') {
-          throw sellerError;
-        }
         
-        if (sellerInfo) {
-          setSellerData(sellerInfo);
-          
-          // Fetch products
-          const { data: productsData, error: productsError } = await supabase
-            .from('products')
-            .select('*')
-            .eq('seller_id', userId)
-            .order('created_at', { ascending: false });
-
-          if (productsError) throw productsError;
-          setProducts(productsData || []);
-        }
+        setSeller(sellerData);
+        
+        // Fetch seller's products
+        await fetchProducts();
+      } else {
+        // Fetch cart for buyers
+        await fetchCart();
       }
 
-      // Fetch user likes
-      const { data: likesData, error: likesError } = await supabase
-        .from('product_likes')
-        .select('product_id')
-        .eq('user_id', userId);
-
-      if (likesError) throw likesError;
-      const likedProducts = new Set(likesData?.map(like => like.product_id) || []);
-      setUserLikes(likedProducts);
-
-      // Fetch orders
-      const { data: ordersData, error: ordersError } = await supabase
-        .from('orders')
-        .select('*')
-        .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
-        .order('created_at', { ascending: false });
-
-      if (ordersError) throw ordersError;
-      setOrders(ordersData || []);
-
-      // Fetch messages
-      const { data: messagesData, error: messagesError } = await supabase
-        .from('messages')
-        .select('*')
-        .or(`from_user_id.eq.${userId},to_user_id.eq.${userId}`)
-        .order('created_at', { ascending: false });
-
-      if (messagesError) throw messagesError;
-      setMessages(messagesData || []);
-
+      // Fetch orders and messages for all users
+      await fetchOrders();
+      await fetchMessages();
     } catch (error) {
-      setUserLikes(new Set());
+      console.error('Error fetching profile:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const signup = async (email: string, password: string, fullName: string, role: 'buyer' | 'seller') => {
-    const { data, error } = await supabase.auth.signUp({
+  const signUp = async (email: string, password: string, fullName: string, role: 'buyer' | 'seller') => {
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -237,149 +143,130 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    if (error) throw error;
+    return { error };
   };
 
-  const login = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
 
-    if (error) throw error;
+    return { error };
   };
 
-  const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    
-    // Clear all states on logout
-    setProfile(null);
-    setSellerData(null);
-    setProducts([]);
-    setOrders([]);
-    setMessages([]);
-    setCart([]);
-    setProductLikes({});
-    setProductComments({});
+  const signOut = async () => {
+    await supabase.auth.signOut();
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
-    if (!user) throw new Error('No user logged in');
-
-    // Handle profile image upload if it's a File
-    let profileImageUrl = updates.profile_image;
-    if (updates.profile_image && updates.profile_image instanceof File) {
-      const file = updates.profile_image as File;
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `profiles/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      profileImageUrl = publicUrl;
-    }
+    if (!user) return { error: new Error('No user logged in') };
 
     const { error } = await supabase
       .from('profiles')
-      .update({ ...updates, profile_image: profileImageUrl })
+      .update(updates)
       .eq('id', user.id);
 
-    if (error) throw error;
-
-    setProfile(prev => prev ? { ...prev, ...updates, profile_image: profileImageUrl } : null);
-  };
-
-  const becomeSeller = async (storeName: string, storeDescription?: string) => {
-    if (!user) throw new Error('No user logged in');
-
-    try {
-      // Update profile role first
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ role: 'seller' })
-        .eq('id', user.id);
-
-      if (profileError) throw profileError;
-
-      // Create seller record
-      const { data, error } = await supabase
-        .from('sellers')
-        .insert({
-          user_id: user.id,
-          store_name: storeName,
-          store_description: storeDescription
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      
-      // Update local states
-      setProfile(prev => prev ? { ...prev, role: 'seller' } : null);
-      setSellerData(data);
-      
-      return { data, error: null };
-    } catch (error) {
-      console.error('Error becoming seller:', error);
-      return { data: null, error };
+    if (!error && profile) {
+      setProfile({ ...profile, ...updates });
     }
+
+    return { error };
   };
 
-  const backToBuyer = async () => {
-    if (!user) throw new Error('No user logged in');
+  const createSellerProfile = async (storeData: Partial<Seller>) => {
+    if (!user) return { error: new Error('No user logged in') };
 
-    // Update profile role
-    await updateProfile({ role: 'buyer' });
+    // Update role to seller
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ role: 'seller' })
+      .eq('id', user.id);
 
-    // Delete seller record
-    const { error } = await supabase
+    if (profileError) return { error: profileError };
+
+    // Create seller profile
+    const { data, error } = await supabase
       .from('sellers')
-      .delete()
-      .eq('user_id', user.id);
+      .insert({
+        user_id: user.id,
+        ...storeData
+      })
+      .select()
+      .single();
 
-    if (error) throw error;
+    if (!error) {
+      setSeller(data);
+      if (profile) {
+        setProfile({ ...profile, role: 'seller' });
+      }
+    }
 
-    setSellerData(null);
-    setProducts([]);
+    return { error };
   };
 
-  const updateSellerData = async (updates: Partial<SellerData>) => {
-    if (!user || !sellerData) throw new Error('No seller data');
+  const updateSellerProfile = async (updates: Partial<Seller>) => {
+    if (!user || !seller) return { error: new Error('No seller profile found') };
 
     const { error } = await supabase
       .from('sellers')
       .update(updates)
       .eq('user_id', user.id);
 
-    if (error) throw error;
+    if (!error) {
+      setSeller({ ...seller, ...updates });
+    }
 
-    setSellerData(prev => prev ? { ...prev, ...updates } : null);
+    return { error };
   };
 
-  const addProduct = async (product: Omit<Product, 'id' | 'seller_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) throw new Error('No user logged in');
+  const switchToNormalUser = async () => {
+    if (!user) return { error: new Error('No user logged in') };
+
+    // Update role to buyer
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ role: 'buyer' })
+      .eq('id', user.id);
+
+    if (profileError) return { error: profileError };
+
+    // Delete seller profile
+    const { error: sellerError } = await supabase
+      .from('sellers')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (!sellerError) {
+      setSeller(null);
+      setProducts([]);
+      if (profile) {
+        setProfile({ ...profile, role: 'buyer' });
+      }
+      await fetchCart();
+    }
+
+    return { error: sellerError };
+  };
+
+  // Product functions
+  const addProduct = async (productData: Omit<Product, 'id' | 'seller_id' | 'created_at' | 'updated_at'>) => {
+    if (!user) return { error: new Error('No user logged in') };
 
     const { data, error } = await supabase
       .from('products')
       .insert({
-        ...product,
+        ...productData,
         seller_id: user.id
       })
       .select()
       .single();
 
-    if (error) throw error;
+    if (!error) {
+      setProducts(prev => [data, ...prev]);
+    }
 
-    setProducts(prev => [data, ...prev]);
+    return { error };
   };
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
@@ -388,9 +275,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .update(updates)
       .eq('id', id);
 
-    if (error) throw error;
+    if (!error) {
+      setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+    }
 
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+    return { error };
   };
 
   const deleteProduct = async (id: string) => {
@@ -399,30 +288,230 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .delete()
       .eq('id', id);
 
-    if (error) throw error;
+    if (!error) {
+      setProducts(prev => prev.filter(p => p.id !== id));
+    }
 
-    setProducts(prev => prev.filter(p => p.id !== id));
+    return { error };
   };
 
-  const sendMessage = async (recipientId: string, message: string, productId?: string) => {
-    if (!user) throw new Error('No user logged in');
+  const fetchProducts = async () => {
+    if (!user) return;
 
     const { data, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        seller:profiles!products_seller_id_fkey(
+          *,
+          sellers(*)
+        )
+      `)
+      .eq('seller_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setProducts(data);
+    }
+  };
+
+  // Cart functions
+  const fetchCart = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('cart_items')
+      .select(`
+        *,
+        product:products(
+          *,
+          seller:profiles!products_seller_id_fkey(*)
+        )
+      `)
+      .eq('user_id', user.id);
+
+    if (!error && data) {
+      setCartItems(data);
+    }
+  };
+
+  const addToCart = async (productId: string, quantity: number = 1) => {
+    if (!user) return { error: new Error('No user logged in') };
+
+    // Check if item already exists
+    const existingItem = cartItems.find(item => item.product_id === productId);
+
+    if (existingItem) {
+      return await updateCartQuantity(productId, existingItem.quantity + quantity);
+    }
+
+    const { data, error } = await supabase
+      .from('cart_items')
+      .insert({
+        user_id: user.id,
+        product_id: productId,
+        quantity
+      })
+      .select(`
+        *,
+        product:products(
+          *,
+          seller:profiles!products_seller_id_fkey(*)
+        )
+      `)
+      .single();
+
+    if (!error && data) {
+      setCartItems(prev => [...prev, data]);
+    }
+
+    return { error };
+  };
+
+  const updateCartQuantity = async (productId: string, quantity: number) => {
+    if (!user) return { error: new Error('No user logged in') };
+
+    if (quantity <= 0) {
+      return await removeFromCart(productId);
+    }
+
+    const { error } = await supabase
+      .from('cart_items')
+      .update({ quantity })
+      .eq('user_id', user.id)
+      .eq('product_id', productId);
+
+    if (!error) {
+      setCartItems(prev => prev.map(item => 
+        item.product_id === productId ? { ...item, quantity } : item
+      ));
+    }
+
+    return { error };
+  };
+
+  const removeFromCart = async (productId: string) => {
+    if (!user) return { error: new Error('No user logged in') };
+
+    const { error } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('product_id', productId);
+
+    if (!error) {
+      setCartItems(prev => prev.filter(item => item.product_id !== productId));
+    }
+
+    return { error };
+  };
+
+  const clearCart = async () => {
+    if (!user) return { error: new Error('No user logged in') };
+
+    const { error } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (!error) {
+      setCartItems([]);
+    }
+
+    return { error };
+  };
+
+  // Order functions
+  const createOrder = async (items: { productId: string; quantity: number }[], shippingAddress?: any) => {
+    if (!user) return { error: new Error('No user logged in') };
+
+    const orders = [];
+    for (const item of items) {
+      const product = products.find(p => p.id === item.productId) || 
+                     cartItems.find(ci => ci.product_id === item.productId)?.product;
+      
+      if (!product) continue;
+
+      orders.push({
+        buyer_id: user.id,
+        seller_id: product.seller_id,
+        product_id: item.productId,
+        quantity: item.quantity,
+        unit_price: product.price,
+        total_price: product.price * item.quantity,
+        shipping_address: shippingAddress
+      });
+    }
+
+    const { error } = await supabase
+      .from('orders')
+      .insert(orders);
+
+    if (!error) {
+      await fetchOrders();
+      await clearCart();
+    }
+
+    return { error };
+  };
+
+  const fetchOrders = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        product:products(*),
+        buyer:profiles!orders_buyer_id_fkey(*),
+        seller:profiles!orders_seller_id_fkey(*)
+      `)
+      .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setOrders(data);
+    }
+  };
+
+  // Message functions
+  const sendMessage = async (toUserId: string, message: string, productId?: string) => {
+    if (!user) return { error: new Error('No user logged in') };
+
+    const { error } = await supabase
       .from('messages')
       .insert({
         from_user_id: user.id,
-        to_user_id: recipientId,
+        to_user_id: toUserId,
         message,
         product_id: productId,
         message_type: productId ? 'product_inquiry' : 'direct'
-      })
-      .select()
-      .single();
+      });
 
-    if (error) throw error;
+    if (!error) {
+      await fetchMessages();
+    }
 
-    setMessages(prev => [data, ...prev]);
-    return data;
+    return { error };
+  };
+
+  const fetchMessages = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('messages')
+      .select(`
+        *,
+        from_user:profiles!messages_from_user_id_fkey(*),
+        to_user:profiles!messages_to_user_id_fkey(*),
+        product:products(*)
+      `)
+      .or(`from_user_id.eq.${user.id},to_user_id.eq.${user.id}`)
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setMessages(data);
+    }
   };
 
   const markMessageAsRead = async (messageId: string) => {
@@ -431,302 +520,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .update({ is_read: true })
       .eq('id', messageId);
 
-    if (error) throw error;
-
-    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, is_read: true } : m));
-  };
-
-  const addToCart = (productId: string) => {
-    setCart(prev => {
-      const existingItem = prev.find(item => item.product_id === productId);
-      if (existingItem) {
-        return prev.map(item =>
-          item.product_id === productId
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      } else {
-        return [...prev, { id: Date.now().toString(), user_id: user?.id || '', product_id: productId, quantity: 1, created_at: new Date().toISOString() }];
-      }
-    });
-  };
-
-  const updateCartQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(productId);
-      return;
+    if (!error) {
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId ? { ...msg, is_read: true } : msg
+      ));
     }
-    setCart(prev =>
-      prev.map(item =>
-        item.product_id === productId
-          ? { ...item, quantity }
-          : item
-      )
-    );
-  };
 
-  const removeFromCart = (productId: string) => {
-    setCart(prev => prev.filter(item => item.product_id !== productId));
-  };
-
-  const addOrderFunc = async (orderData: { product_id: string; quantity: number; price_paid: number; status: 'pendente' | 'processando' | 'enviado' | 'entregue' | 'cancelado'; }) => {
-    if (!user) throw new Error('No user logged in');
-
-    const product = mockProducts.find(p => p.id === orderData.product_id);
-    if (!product) throw new Error('Product not found');
-
-    const { data, error } = await supabase
-      .from('orders')
-      .insert({
-        buyer_id: user.id,
-        seller_id: product.seller?.id || '',
-        product_id: orderData.product_id,
-        quantity: orderData.quantity,
-        unit_price: orderData.price_paid / orderData.quantity,
-        total_price: orderData.price_paid,
-        status: orderData.status
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    setOrders(prev => [data, ...prev]);
-    setCart([]);
-  };
-
-  const updateProductComments = (productId: string, added: boolean) => {
-    setProductComments(prev => ({
-      ...prev,
-      [productId]: (prev[productId] || 0) + (added ? 1 : 0)
-    }));
-  };
-
-  const toggleWishlist = async (productId: string) => {
-    if (!user || !profile) return;
-
-    const currentWishlist = profile.wishlist || [];
-    const isInWishlist = currentWishlist.includes(productId);
-    const newWishlist = isInWishlist
-      ? currentWishlist.filter(id => id !== productId)
-      : [...currentWishlist, productId];
-
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ wishlist: newWishlist })
-        .eq('id', user.id);
-
-      if (error) throw error;
-      
-      setProfile(prev => prev ? { ...prev, wishlist: newWishlist } : null);
-    } catch (error) {
-      console.error('Error updating wishlist:', error);
-    }
-  };
-
-  const toggleProductLike = async (productId: string) => {
-    if (!user) return;
-    
-    const isLiked = userLikes.has(productId);
-    
-    try {
-      if (isLiked) {
-        // Remove like
-        await supabase
-          .from('product_likes')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('product_id', productId);
-        
-        setUserLikes(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(productId);
-          return newSet;
-        });
-      } else {
-        // Add like
-        await supabase
-          .from('product_likes')
-          .insert({ user_id: user.id, product_id: productId });
-        
-        setUserLikes(prev => new Set([...prev, productId]));
-      }
-    } catch (error) {
-      console.error('Error toggling like:', error);
-    }
-  };
-
-  const addProductComment = async (productId: string, comment: string) => {
-    if (!user) throw new Error('No user logged in');
-
-    try {
-      const { data, error } = await supabase
-        .from('product_comments')
-        .insert({
-          user_id: user.id,
-          product_id: productId,
-          comment
-        })
-        .select(`
-          *,
-          user:profiles(full_name, profile_image)
-        `)
-        .single();
-
-      if (error) throw error;
-
-      setProductComments(prev => [data, ...prev]);
-      return data;
-    } catch (error) {
-      console.error('Error adding comment:', error);
-      throw error;
-    }
-  };
-
-  const getProductComments = async (productId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('product_comments')
-        .select(`
-          *,
-          user:profiles(full_name, profile_image)
-        `)
-        .eq('product_id', productId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-      return [];
-    }
-  };
-
-  const getProductLikesCount = async (productId: string) => {
-    try {
-      const { count, error } = await supabase
-        .from('product_likes')
-        .select('*', { count: 'exact', head: true })
-        .eq('product_id', productId);
-
-      if (error) throw error;
-      return count || 0;
-    } catch (error) {
-      console.error('Error fetching likes count:', error);
-      return 0;
-    }
-  };
-
-  // Load user likes on login
-  const loadUserLikes = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('product_likes')
-        .select('product_id')
-        .eq('user_id', userId);
-
-      if (error) throw error;
-      
-      const likedProducts = new Set(data?.map(like => like.product_id) || []);
-      setUserLikes(likedProducts);
-    } catch (error) {
-      console.error('Error loading user likes:', error);
-    }
-  };
-
-  // Update the toggleWishlist function to use the new like system
-  const toggleWishlist = async (productId: string) => {
-    if (!user || !profile) return;
-
-    const currentWishlist = profile.wishlist || [];
-    const isInWishlist = currentWishlist.includes(productId);
-    const newWishlist = isInWishlist
-      ? currentWishlist.filter(id => id !== productId)
-      : [...currentWishlist, productId];
-
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ wishlist: newWishlist })
-        .eq('id', user.id);
-
-      if (error) throw error;
-      
-      setProfile(prev => prev ? { ...prev, wishlist: newWishlist } : null);
-
-      // Also toggle the product like
-      await toggleProductLike(productId);
-    } catch (error) {
-      console.error('Error updating wishlist:', error);
-    }
-  };
-
-  // Legacy functions for backward compatibility
-  const updateProductLikes = (productId: string, liked: boolean) => {
-    if (liked) {
-      toggleProductLike(productId);
-    }
-  };
-
-  const updateProductComments = (productId: string, added: boolean) => {
-    // This is now handled by addProductComment
-  };
-
-  // Clean up old functions
-  const persistLike = async (productId: string, liked: boolean) => {
-    if (!user) return;
-    
-    try {
-      if (liked) {
-        await supabase
-          .from('product_likes')
-          .insert({ user_id: user.id, product_id: productId });
-      } else {
-        await supabase
-          .from('product_likes')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('product_id', productId);
-      }
-    } catch (error) {
-      console.error('Error persisting like:', error);
-    }
+    return { error };
   };
 
   const value = {
     user,
     profile,
-    sellerData,
-    products,
-    orders,
-    messages,
-    cart,
+    seller,
+    session,
     loading,
-    addToCart,
-    updateCartQuantity,
-    removeFromCart,
-    addOrder: addOrderFunc,
-    userLikes,
-    toggleProductLike,
-    updateProductLikes,
-    productComments,
-    updateProductComments,
-    addProductComment,
-    getProductComments,
-    getProductLikesCount,
-    toggleWishlist,
-    signup,
-    login,
-    logout,
+    signUp,
+    signIn,
+    signOut,
     updateProfile,
-    becomeSeller,
-    backToBuyer,
-    updateSellerData,
+    createSellerProfile,
+    updateSellerProfile,
+    switchToNormalUser,
+    products,
     addProduct,
     updateProduct,
     deleteProduct,
+    fetchProducts,
+    cartItems,
+    addToCart,
+    updateCartQuantity,
+    removeFromCart,
+    clearCart,
+    orders,
+    createOrder,
+    fetchOrders,
+    messages,
     sendMessage,
+    fetchMessages,
     markMessageAsRead
   };
 
@@ -735,12 +566,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

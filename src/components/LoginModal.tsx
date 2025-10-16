@@ -20,7 +20,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  const { login } = useAuth();
+  const { signIn } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,12 +28,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     setIsLoading(true);
 
     try {
-      await login(email, password);
-      onClose();
-      setEmail('');
-      setPassword('');
+      const { error } = await signIn(email, password);
+      if (!error) {
+        onClose();
+        setEmail('');
+        setPassword('');
+      } else {
+        setError(error.message || 'Email ou senha incorretos');
+      }
     } catch (err) {
-      setError('Email ou senha incorretos');
+      setError('Erro ao fazer login. Tente novamente.');
     } finally {
       setIsLoading(false);
     }

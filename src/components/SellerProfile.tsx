@@ -93,7 +93,7 @@ export const SellerProfile: React.FC<SellerProfileProps> = ({
         </div>
 
         {/* Contact Button */}
-        <button
+        <button 
           onClick={() => setShowChatModal(true)}
           className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all"
         >

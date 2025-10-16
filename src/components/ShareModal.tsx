@@ -37,13 +37,8 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   };
 
   const handleWhatsAppShare = () => {
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText + '\n' + productUrl)}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${shareText}\n${productUrl}`)}`;
     window.open(whatsappUrl, '_blank');
-  };
-
-  const handleTelegramShare = () => {
-    const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(productUrl)}&text=${encodeURIComponent(shareText)}`;
-    window.open(telegramUrl, '_blank');
   };
 
   const shareOptions = [
@@ -53,13 +48,6 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       icon: MessageCircle,
       color: 'bg-green-500',
       action: handleWhatsAppShare
-    },
-    {
-      id: 'telegram',
-      name: 'Telegram',
-      icon: MessageCircle,
-      color: 'bg-blue-500',
-      action: handleTelegramShare
     },
     {
       id: 'copy',

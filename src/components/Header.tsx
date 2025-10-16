@@ -12,10 +12,10 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onLoginClick, onCartClick, activeTab, onTabChange }) => {
-  const { user, profile, logout, cart } = useAuth();
+  const { user, profile, signOut, cartItems } = useAuth();
 
   // Calculate total items in cart
-  const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
+  const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
   const navItems = [
     { id: 'home', icon: Home, label: 'Início' },
@@ -100,7 +100,7 @@ export const Header: React.FC<HeaderProps> = ({ onLoginClick, onCartClick, activ
                   </span>
                 </button>
                 <button
-                  onClick={logout}
+                  onClick={signOut}
                   className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
                 >
                   Sair

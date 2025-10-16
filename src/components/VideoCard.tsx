@@ -24,23 +24,11 @@ export const VideoCard: React.FC<VideoCardProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [showControls, setShowControls] = useState(true);
-  const [likesCount, setLikesCount] = useState(product.likes);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const { addToCart, userLikes, toggleProductLike, getProductLikesCount } = useAuth();
+  const { addToCart, productLikes, updateProductLikes, productComments } = useAuth();
 
-  // Check if user has liked this product
-  React.useEffect(() => {
-    setIsLiked(userLikes.has(product.id));
-  }, [userLikes, product.id]);
-
-  // Load current likes count
-  React.useEffect(() => {
-    const loadLikesCount = async () => {
-      const count = await getProductLikesCount(product.id);
-      setLikesCount(count);
-    };
-    loadLikesCount();
-  }, [product.id, getProductLikesCount]);
+  const currentLikes = product.likes + (productLikes[product.id] || 0);
+  const currentComments = product.comments + (productComments[product.id] || 0);
 
   useEffect(() => {
     if (videoRef.current) {
@@ -64,10 +52,24 @@ export const VideoCard: React.FC<VideoCardProps> = ({
     }
   }, [showControls, isPlaying]);
 
-  const handleLike = async () => {
-    await toggleProductLike(product.id);
-    // Update local likes count
-    setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+  const togglePlay = () => {
+    const newPlayingState = !isPlaying;
+    setIsPlaying(newPlayingState);
+    setShowControls(true);
+    
+    if (videoRef.current) {
+      if (newPlayingState) {
+        videoRef.current.play();
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  };
+
+  const handleLike = () => {
+    const newLikedState = !isLiked;
+    setIsLiked(newLikedState);
+    updateProductLikes(product.id, newLikedState);
     onLike(product.id);
   };
 
@@ -166,7 +168,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
                     fill={isLiked ? 'white' : 'none'}
                   />
                 </div>
-                <span className="text-white text-xs mt-1">{likesCount}</span>
+                <span className="text-white text-xs mt-1">{currentLikes}</span>
               </motion.button>
 
               <motion.button
@@ -177,7 +179,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
                 <div className="p-2 rounded-full bg-black bg-opacity-50">
                   <MessageCircle className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-white text-xs mt-1">{product.comments}</span>
+                <span className="text-white text-xs mt-1">{currentComments}</span>
               </motion.button>
 
               <motion.button

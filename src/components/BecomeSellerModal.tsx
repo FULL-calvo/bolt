@@ -277,11 +277,6 @@ export const BecomeSellerModal: React.FC<BecomeSellerModalProps> = ({
                     </p>
                   </div>
 
-                  {error && (
-                    <div className="text-red-500 text-sm bg-red-50 p-3 rounded-lg">
-                      {error}
-                    </div>
-                  )}
                   <div className="flex space-x-3">
                     <button
                       type="button"

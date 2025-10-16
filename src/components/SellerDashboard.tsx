@@ -13,7 +13,7 @@ interface SellerDashboardProps {
 }
 
 export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onBack }) => {
-  const { user, profile, sellerData, products, backToBuyer } = useAuth();
+  const { user, profile, seller, products, switchToNormalUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'store'>('dashboard');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showEditProduct, setShowEditProduct] = useState(false);
@@ -23,7 +23,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onBack }) => {
 
   const handleBackToNormalUser = () => {
     if (confirm('Tem certeza que deseja voltar para uma conta de usuário normal? Você perderá acesso ao painel de vendedor e todos os seus produtos serão removidos.')) {
-      backToBuyer();
+      switchToNormalUser();
     }
   };
   
@@ -102,7 +102,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onBack }) => {
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
             <div>
-              <h1 className="text-xl font-bold text-gray-800">{sellerData?.store_name}</h1>
+              <h1 className="text-xl font-bold text-gray-800">{seller?.store_name}</h1>
               <p className="text-sm text-gray-600">Painel do Vendedor</p>
               {isNewSeller && (
                 <p className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full mt-1 inline-block">
@@ -380,13 +380,13 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onBack }) => {
               <div className="grid gap-4">
                 <div className="flex items-center space-x-4">
                   <img
-                    src={profile?.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(sellerData?.store_name || '')}&background=8b5cf6&color=fff`}
-                    alt={sellerData?.store_name}
+                    src={user?.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.store_name || '')}&background=8b5cf6&color=fff`}
+                    alt={user?.store_name}
                     className="w-16 h-16 rounded-lg"
                   />
                   <div className="flex-1">
-                    <h4 className="font-semibold text-gray-800">{sellerData?.store_name}</h4>
-                    <p className="text-gray-600">{sellerData?.store_description}</p>
+                    <h4 className="font-semibold text-gray-800">{user?.store_name}</h4>
+                    <p className="text-gray-600">{user?.store_description}</p>
                     {isNewSeller && (
                       <span className="inline-block mt-1 bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs">
                         Loja Nova - Sem Avaliações
@@ -398,15 +398,15 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onBack }) => {
                 <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
                   <div>
                     <p className="text-sm text-gray-600">Telefone</p>
-                    <p className="font-medium text-gray-800">{profile?.phone || 'Não informado'}</p>
+                    <p className="font-medium text-gray-800">{user?.phone || 'Não informado'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Email</p>
-                    <p className="font-medium text-gray-800">{profile?.email}</p>
+                    <p className="font-medium text-gray-800">{user?.email}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Status</p>
-                    <p className="font-medium text-green-600">{sellerData?.is_verified ? 'Verificada' : 'Ativa'}</p>
+                    <p className="font-medium text-green-600">Ativa</p>
                   </div>
                 </div>
               </div>

@@ -16,16 +16,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   seller
 }) => {
   const [newMessage, setNewMessage] = useState('');
-  const { user, messages, sendMessage } = useAuth();
+  const { user, messages, addMessage } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Filter messages for this conversation
   const conversationMessages = messages.filter(message => 
-    message.message_type === 'direct' && (
+    message.type === 'direct' && (
       (message.from_user_id === user?.id && message.to_user_id === seller.id) ||
       (message.from_user_id === seller.id && message.to_user_id === user?.id)
     )
-  ).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  ).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -38,7 +38,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({
     e.preventDefault();
     if (!newMessage.trim() || !user) return;
 
-    sendMessage(seller.id, newMessage.trim());
+    addMessage({
+      from_user_id: user.id,
+      to_user_id: seller.id,
+      message: newMessage.trim(),
+      read: false,
+      type: 'direct'
+    });
 
     setNewMessage('');
   };
@@ -112,7 +118,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                       }`}>
                         <p>{message.message}</p>
                         <p className={`text-xs mt-1 ${isFromMe ? 'text-purple-100' : 'text-gray-500'}`}>
-                          {formatTime(message.created_at)}
+                          {formatTime(message.timestamp)}
                         </p>
                       </div>
                     </div>

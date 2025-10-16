@@ -11,7 +11,6 @@ import { CheckoutPage } from './components/CheckoutPage';
 import { SellerProfile } from './components/SellerProfile';
 import { LoginModal } from './components/LoginModal';
 import { SignupModal } from './components/SignupModal';
-import { Footer } from './components/Footer';
 import { Product, User } from './types';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -25,6 +24,17 @@ function App() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { user, profile, loading } = useAuth();
 
+  // Show loading screen while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Carregando...</p>
+        </div>
+      </div>
+    );
+  }
   // Listen for profile click from header
   React.useEffect(() => {
     const handleOpenProfile = () => {
@@ -65,18 +75,6 @@ function App() {
       window.removeEventListener('startSellerConversation', handleStartSellerConversation as EventListener);
     };
   }, [user]);
-
-  // Show loading screen while checking authentication
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p>Carregando...</p>
-        </div>
-      </div>
-    );
-  }
 
   const handleBuyNow = (product: Product) => {
     setSelectedProduct(product);
@@ -296,9 +294,6 @@ function App() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Footer */}
-      {activeTab === 'home' && <Footer />}
     </div>
   );
 }

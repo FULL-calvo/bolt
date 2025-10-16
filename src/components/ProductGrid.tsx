@@ -132,7 +132,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               <div className="flex space-x-2 pt-2">
                 <button
                   onClick={(e) => handleAddToCart(product, e)}
-                  className="flex-1 border-2 border-purple-500 text-purple-500 py-2 px-3 rounded-full text-xs font-medium hover:bg-purple-50 transition-colors flex items-center justify-center space-x-1"
+                  className="flex-1 bg-blue-50 text-blue-600 py-2 px-3 rounded text-xs font-medium hover:bg-blue-100 transition-colors flex items-center justify-center space-x-1"
                 >
                   <ShoppingCart className="w-3 h-3" />
                   <span>Carrinho</span>
@@ -142,7 +142,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
                     e.stopPropagation();
                     onBuyNow(product);
                   }}
-                  className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white py-2 px-3 rounded-full text-xs font-medium hover:from-purple-600 hover:to-blue-600 transition-colors"
+                  className="flex-1 bg-blue-600 text-white py-2 px-3 rounded text-xs font-medium hover:bg-blue-700 transition-colors"
                 >
                   Comprar
                 </button>
