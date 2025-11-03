@@ -12,9 +12,10 @@ export const BecomeSellerModal: React.FC<BecomeSellerModalProps> = ({
   isOpen,
   onClose
 }) => {
-  const { createSellerProfile } = useAuth();
+  const { becomeSeller } = useAuth();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     store_name: '',
     cnpj_cpf: '',
@@ -46,27 +47,24 @@ export const BecomeSellerModal: React.FC<BecomeSellerModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
       // Create seller profile
-      const { error } = await createSellerProfile({
+      const { error } = await becomeSeller({
         store_name: formData.store_name,
-        store_description: formData.store_description
+        store_description: formData.store_description,
       });
 
       if (error) {
         throw error;
       }
 
-      setIsLoading(false);
       onClose();
     } catch (error) {
       console.error('Erro ao criar perfil de vendedor:', error);
-      setIsLoading(false);
+      setError('Erro ao criar perfil de vendedor. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -276,6 +274,12 @@ export const BecomeSellerModal: React.FC<BecomeSellerModalProps> = ({
                       Cole o link de uma imagem ou deixe vazio para usar seu avatar atual
                     </p>
                   </div>
+
+                  {error && (
+                    <div className="text-red-500 text-sm bg-red-50 p-3 rounded-lg">
+                      {error}
+                    </div>
+                  )}
 
                   <div className="flex space-x-3">
                     <button

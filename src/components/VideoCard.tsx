@@ -22,13 +22,13 @@ export const VideoCard: React.FC<VideoCardProps> = ({
   onShare
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const { addToCart, productLikes, updateProductLikes, productComments } = useAuth();
+  const { addToCart, user, productLikes, toggleLike } = useAuth();
 
-  const currentLikes = product.likes + (productLikes[product.id] || 0);
-  const currentComments = product.comments + (productComments[product.id] || 0);
+  // Check if user has liked this product
+  const isLiked = productLikes.some(like => like.product_id === product.id);
+  const currentLikes = product.likes + (isLiked ? 1 : 0);
 
   useEffect(() => {
     if (videoRef.current) {
@@ -66,10 +66,10 @@ export const VideoCard: React.FC<VideoCardProps> = ({
     }
   };
 
-  const handleLike = () => {
-    const newLikedState = !isLiked;
-    setIsLiked(newLikedState);
-    updateProductLikes(product.id, newLikedState);
+  const handleLike = async () => {
+    if (!user) return;
+    
+    await toggleLike(product.id);
     onLike(product.id);
   };
 
@@ -179,7 +179,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
                 <div className="p-2 rounded-full bg-black bg-opacity-50">
                   <MessageCircle className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-white text-xs mt-1">{currentComments}</span>
+                <span className="text-white text-xs mt-1">{product.comments}</span>
               </motion.button>
 
               <motion.button

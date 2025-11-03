@@ -15,7 +15,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   onProductClick, 
   onBuyNow 
 }) => {
-  const { addToCart, toggleWishlist, user } = useAuth();
+  const { addToCart, toggleWishlist, user, productLikes } = useAuth();
   const [likedProducts, setLikedProducts] = useState<Set<string>>(new Set());
 
   const formatPrice = (price: number) => {
@@ -35,14 +35,9 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
 
   const handleLike = (productId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const newLikedProducts = new Set(likedProducts);
-    if (likedProducts.has(productId)) {
-      newLikedProducts.delete(productId);
-    } else {
-      newLikedProducts.add(productId);
+    if (user) {
+      toggleWishlist(productId);
     }
-    setLikedProducts(newLikedProducts);
-    toggleWishlist(productId);
   };
 
   const handleAddToCart = (product: Product, e: React.MouseEvent) => {
@@ -53,7 +48,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-4">
       {products.map((product, index) => {
-        const isLiked = likedProducts.has(product.id);
+        const isLiked = productLikes.some(like => like.product_id === product.id);
 
         return (
           <motion.div
@@ -132,7 +127,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               <div className="flex space-x-2 pt-2">
                 <button
                   onClick={(e) => handleAddToCart(product, e)}
-                  className="flex-1 bg-blue-50 text-blue-600 py-2 px-3 rounded text-xs font-medium hover:bg-blue-100 transition-colors flex items-center justify-center space-x-1"
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white py-2 px-3 rounded-full text-xs font-medium hover:from-purple-600 hover:to-blue-600 transition-all flex items-center justify-center space-x-1 shadow-sm"
                 >
                   <ShoppingCart className="w-3 h-3" />
                   <span>Carrinho</span>
@@ -142,7 +137,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
                     e.stopPropagation();
                     onBuyNow(product);
                   }}
-                  className="flex-1 bg-blue-600 text-white py-2 px-3 rounded text-xs font-medium hover:bg-blue-700 transition-colors"
+                  className="flex-1 border-2 border-purple-500 text-purple-500 py-2 px-3 rounded-full text-xs font-medium hover:bg-purple-50 transition-all"
                 >
                   Comprar
                 </button>

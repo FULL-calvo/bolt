@@ -10,35 +10,13 @@ interface MessagesPageProps {
 }
 
 export const MessagesPage: React.FC<MessagesPageProps> = ({ onBack }) => {
-  const { user, messages, addMessage } = useAuth();
+  const { user, messages, sendMessage } = useAuth();
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Listen for new conversation events
-  useEffect(() => {
-    const handleStartConversation = (event: CustomEvent) => {
-      const { sellerId } = event.detail;
-      
-      // Add initial message to start conversation
-      addMessage({
-        from_user_id: user?.id || '',
-        to_user_id: sellerId,
-        message: 'Olá! Tenho interesse nos seus produtos.',
-        read: false,
-        type: 'direct'
-      });
-      
-      // Select the conversation
-      setSelectedConversation(sellerId);
-    };
-
-    window.addEventListener('startConversation', handleStartConversation as EventListener);
-    return () => window.removeEventListener('startConversation', handleStartConversation as EventListener);
-  }, [user, addMessage]);
-
   // Agrupar mensagens por conversa
-  const conversations = messages.filter(message => message.type === 'direct').reduce((acc, message) => {
+  const conversations = messages.filter(message => message.message_type === 'direct').reduce((acc, message) => {
     const otherUserId = message.from_user_id === user?.id ? message.to_user_id : message.from_user_id;
     if (!otherUserId) return acc;
     
@@ -59,13 +37,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ onBack }) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedConversation || !user) return;
 
-    addMessage({
-      from_user_id: user.id,
-      to_user_id: selectedConversation,
-      message: newMessage.trim(),
-      read: false,
-      type: 'direct'
-    });
+    await sendMessage(selectedConversation, newMessage.trim());
 
     setNewMessage('');
   };
@@ -129,7 +101,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ onBack }) => {
                 }`}>
                   <p>{message.message}</p>
                   <p className={`text-xs mt-1 ${isFromMe ? 'text-purple-100' : 'text-gray-500'}`}>
-                    {formatTime(message.timestamp)}
+                    {formatTime(message.created_at)}
                   </p>
                 </div>
               </div>
@@ -226,7 +198,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ onBack }) => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-gray-800 truncate">{getUserName(userId)}</h3>
-                      <span className="text-xs text-gray-500">{formatTime(lastMessage.timestamp)}</span>
+                      <span className="text-xs text-gray-500">{formatTime(lastMessage.created_at)}</span>
                     </div>
                     <p className="text-sm text-gray-600 truncate">{lastMessage.message}</p>
                   </div>

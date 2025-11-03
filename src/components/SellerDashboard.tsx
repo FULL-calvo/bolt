@@ -13,7 +13,7 @@ interface SellerDashboardProps {
 }
 
 export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onBack }) => {
-  const { user, profile, seller, products, switchToNormalUser } = useAuth();
+  const { user, profile, sellerData, backToBuyer } = useAuth();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'store'>('dashboard');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showEditProduct, setShowEditProduct] = useState(false);
@@ -23,12 +23,12 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onBack }) => {
 
   const handleBackToNormalUser = () => {
     if (confirm('Tem certeza que deseja voltar para uma conta de usuário normal? Você perderá acesso ao painel de vendedor e todos os seus produtos serão removidos.')) {
-      switchToNormalUser();
+      backToBuyer();
     }
   };
   
   // Check if this is a new seller (no products yet) or existing seller
-  const isNewSeller = products.length === 0;
+  const isNewSeller = true; // For now, assume new seller since we don't have products in context
   
   // For new sellers, show zero stats. For existing sellers, show mock data
   const totalSales = isNewSeller ? 0 : 150;
@@ -45,7 +45,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onBack }) => {
   };
 
   const stats = [
-    { label: 'Produtos', value: products.length, icon: Package, color: 'bg-blue-500' },
+    { label: 'Produtos', value: 0, icon: Package, color: 'bg-blue-500' },
     { label: 'Vendas', value: totalSales, icon: ShoppingBag, color: 'bg-green-500' },
     { label: 'Receita', value: formatPrice(totalRevenue), icon: TrendingUp, color: 'bg-purple-500' },
     { label: 'Pedidos Pendentes', value: pendingOrders, icon: Users, color: 'bg-orange-500' }
@@ -102,7 +102,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onBack }) => {
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
             <div>
-              <h1 className="text-xl font-bold text-gray-800">{seller?.store_name}</h1>
+              <h1 className="text-xl font-bold text-gray-800">{sellerData?.store_name}</h1>
               <p className="text-sm text-gray-600">Painel do Vendedor</p>
               {isNewSeller && (
                 <p className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full mt-1 inline-block">
@@ -380,13 +380,13 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onBack }) => {
               <div className="grid gap-4">
                 <div className="flex items-center space-x-4">
                   <img
-                    src={user?.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.store_name || '')}&background=8b5cf6&color=fff`}
-                    alt={user?.store_name}
+                    src={profile?.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(sellerData?.store_name || '')}&background=8b5cf6&color=fff`}
+                    alt={sellerData?.store_name}
                     className="w-16 h-16 rounded-lg"
                   />
                   <div className="flex-1">
-                    <h4 className="font-semibold text-gray-800">{user?.store_name}</h4>
-                    <p className="text-gray-600">{user?.store_description}</p>
+                    <h4 className="font-semibold text-gray-800">{sellerData?.store_name}</h4>
+                    <p className="text-gray-600">{sellerData?.store_description}</p>
                     {isNewSeller && (
                       <span className="inline-block mt-1 bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs">
                         Loja Nova - Sem Avaliações
@@ -398,11 +398,11 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onBack }) => {
                 <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
                   <div>
                     <p className="text-sm text-gray-600">Telefone</p>
-                    <p className="font-medium text-gray-800">{user?.phone || 'Não informado'}</p>
+                    <p className="font-medium text-gray-800">{profile?.phone || 'Não informado'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Email</p>
-                    <p className="font-medium text-gray-800">{user?.email}</p>
+                    <p className="font-medium text-gray-800">{profile?.email}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Status</p>

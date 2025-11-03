@@ -11,6 +11,7 @@ import { CheckoutPage } from './components/CheckoutPage';
 import { SellerProfile } from './components/SellerProfile';
 import { LoginModal } from './components/LoginModal';
 import { SignupModal } from './components/SignupModal';
+import { Footer } from './components/Footer';
 import { Product, User } from './types';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -219,6 +220,8 @@ function App() {
           )}
         </AnimatePresence>
       </main>
+
+      <Footer />
 
       <BottomNavigation 
         activeTab={activeTab}

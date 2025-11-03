@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, CreditCard as Edit3, Save, X, Camera, ArrowLeft, Heart, ShoppingBag, Package, Store } from 'lucide-react';
+import { User, CreditCard as Edit3, Save, X, Camera, ArrowLeft, Heart, ShoppingBag, Package, Store, Upload } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { mockProducts } from '../data/mockData';
@@ -11,10 +11,11 @@ interface ProfilePageProps {
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
-  const { user, profile, updateProfile } = useAuth();
+  const { user, profile, updateProfile, uploadAvatar, wishlist } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [activeSection, setActiveSection] = useState<'profile' | 'orders' | 'wishlist'>('profile');
   const [showBecomeSellerModal, setShowBecomeSellerModal] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || '',
     email: profile?.email || '',
@@ -22,8 +23,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
     bio: profile?.bio || ''
   });
 
-  const wishlistProducts = mockProducts.filter(p => user?.wishlist?.includes(p.id));
-  const userOrders = user?.orders || [];
+  const wishlistProducts = mockProducts.filter(p => wishlist?.includes(p.id));
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -52,6 +52,21 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
       bio: profile?.bio || ''
     });
     setIsEditing(false);
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingAvatar(true);
+    const { error } = await uploadAvatar(file);
+    
+    if (error) {
+      console.error('Error uploading avatar:', error);
+      alert('Erro ao fazer upload da imagem. Tente novamente.');
+    }
+    
+    setUploadingAvatar(false);
   };
 
   // If user is a seller, show seller dashboard
@@ -114,10 +129,25 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                 alt={profile.full_name}
                 className="w-24 h-24 rounded-full mx-auto"
               />
-              {isEditing && (
-                <button className="absolute bottom-0 right-0 bg-purple-500 text-white p-2 rounded-full hover:bg-purple-600 transition-colors">
-                  <Camera className="w-4 h-4" />
-                </button>
+              <div className="absolute bottom-0 right-0">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                  id="avatar-upload"
+                />
+                <label
+                  htmlFor="avatar-upload"
+                  className="bg-purple-500 text-white p-2 rounded-full hover:bg-purple-600 transition-colors cursor-pointer flex items-center justify-center"
+                >
+                  {uploadingAvatar ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    <Camera className="w-4 h-4" />
+                  )}
+                </label>
+              </div>
               )}
             </div>
             {!isEditing && (
@@ -240,7 +270,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                   onClick={() => setActiveSection('orders')}
                   className="bg-purple-50 rounded-lg p-4 hover:bg-purple-100 transition-colors"
                 >
-                  <p className="text-2xl font-bold text-purple-600">{userOrders.length}</p>
+                  <p className="text-2xl font-bold text-purple-600">0</p>
                   <p className="text-sm text-gray-600">Compras</p>
                 </button>
                 <button
@@ -266,41 +296,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              {userOrders.length === 0 ? (
-                <div className="text-center py-8">
-                  <ShoppingBag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">Nenhuma compra realizada ainda</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {userOrders.map((order) => {
-                    const product = mockProducts.find(p => p.id === order.product_id);
-                    return (
-                      <div key={order.order_id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                        {product && (
-                          <>
-                            <img
-                              src={product.thumbnail}
-                              alt={product.title}
-                              className="w-12 h-12 rounded-lg object-cover"
-                            />
-                            <div className="flex-1">
-                              <h4 className="font-medium text-gray-800 text-sm">{product.title}</h4>
-                              <p className="text-xs text-gray-500">
-                                {new Date(order.purchased_at).toLocaleDateString('pt-BR')}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-semibold text-purple-600">{formatPrice(order.price_paid)}</p>
-                              <p className="text-xs text-green-600">{order.status}</p>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              <div className="text-center py-8">
+                <ShoppingBag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">Nenhuma compra realizada ainda</p>
+              </div>
             </div>
           )}
 

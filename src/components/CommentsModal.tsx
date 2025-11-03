@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Send, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, ProductComment } from '../contexts/AuthContext';
 import { Product } from '../types';
 
 interface CommentsModalProps {
@@ -16,28 +16,36 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({
   product
 }) => {
   const [newComment, setNewComment] = useState('');
-  const { user, comments, addComment, addMessage, productComments, updateProductComments } = useAuth();
+  const [comments, setComments] = useState<ProductComment[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { user, addComment, fetchProductComments } = useAuth();
   
-  const filteredCommentsForProduct = comments.filter(c => c.product_id === product.id);
-  const currentCommentCount = product.comments + (productComments[product.id] || 0);
+  // Load comments when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      loadComments();
+    }
+  }, [isOpen, product.id]);
+
+  const loadComments = async () => {
+    setLoading(true);
+    const productComments = await fetchProductComments(product.id);
+    setComments(productComments);
+    setLoading(false);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim() || !user) return;
 
-    // Adicionar comentário
-    addComment({
-      user_id: user.id,
-      product_id: product.id,
-      message: newComment.trim(),
-      read: false
-    });
-
-
-    // Update comment count
-    updateProductComments(product.id, true);
-
-    setNewComment('');
+    setLoading(true);
+    const { error } = await addComment(product.id, newComment.trim());
+    
+    if (!error) {
+      setNewComment('');
+      await loadComments(); // Reload comments to show the new one
+    }
+    setLoading(false);
   };
 
   const formatTime = (timestamp: string) => {
@@ -50,6 +58,16 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({
     if (minutes < 60) return `${minutes}m`;
     if (minutes < 1440) return `${Math.floor(minutes / 60)}h`;
     return `${Math.floor(minutes / 1440)}d`;
+  };
+
+  const getUserName = (comment: ProductComment) => {
+    return comment.profiles?.full_name || 'Usuário';
+  };
+
+  const getUserAvatar = (comment: ProductComment) => {
+    const name = getUserName(comment);
+    return comment.profiles?.profile_image || 
+           `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=8b5cf6&color=fff`;
   };
 
   return (
@@ -75,7 +93,7 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({
                 <MessageCircle className="w-6 h-6 text-purple-600" />
                 <div>
                   <h3 className="font-semibold text-gray-800">Comentários</h3>
-                  <p className="text-sm text-gray-500">{currentCommentCount} comentários</p>
+                  <p className="text-sm text-gray-500">{comments.length} comentários</p>
                 </div>
               </div>
               <button
@@ -88,28 +106,33 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({
 
             {/* Comments List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {filteredCommentsForProduct.length === 0 ? (
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
+                  <p className="text-gray-500 mt-2">Carregando comentários...</p>
+                </div>
+              ) : comments.length === 0 ? (
                 <div className="text-center py-8">
                   <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                   <p className="text-gray-500">Seja o primeiro a comentar!</p>
                 </div>
               ) : (
-                filteredCommentsForProduct.map((comment) => (
+                comments.map((comment) => (
                   <div key={comment.id} className="flex space-x-3">
                     <img
-                      src={comment.user?.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.user?.name || 'User')}&background=8b5cf6&color=fff`}
-                      alt={comment.user?.name}
+                      src={getUserAvatar(comment)}
+                      alt={getUserName(comment)}
                       className="w-8 h-8 rounded-full"
                     />
                     <div className="flex-1">
                       <div className="bg-gray-100 rounded-2xl px-4 py-2">
                         <p className="font-medium text-sm text-gray-800">
-                          {comment.user?.name || 'Usuário'}
+                          {getUserName(comment)}
                         </p>
-                        <p className="text-gray-700">{comment.message}</p>
+                        <p className="text-gray-700">{comment.comment}</p>
                       </div>
                       <p className="text-xs text-gray-500 mt-1 ml-4">
-                        {formatTime(comment.timestamp)}
+                        {formatTime(comment.created_at)}
                       </p>
                     </div>
                   </div>
@@ -122,8 +145,8 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({
               <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200">
                 <div className="flex items-center space-x-3">
                   <img
-                    src={user.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=8b5cf6&color=fff`}
-                    alt={user.name}
+                    src={user.user_metadata?.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.full_name || 'User')}&background=8b5cf6&color=fff`}
+                    alt={user.user_metadata?.full_name || 'User'}
                     className="w-8 h-8 rounded-full"
                   />
                   <div className="flex-1 flex items-center space-x-2">
@@ -137,10 +160,14 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({
                     />
                     <button
                       type="submit"
-                      disabled={!newComment.trim()}
+                      disabled={!newComment.trim() || loading}
                       className="p-2 bg-purple-500 text-white rounded-full hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Send className="w-4 h-4" />
+                      {loading ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 </div>
