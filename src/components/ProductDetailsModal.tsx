@@ -234,14 +234,14 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
               <div className="flex space-x-4">
                 <button
                   onClick={handleAddToCart}
-                  className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold py-3 px-6 rounded-full hover:from-purple-600 hover:to-blue-600 transition-all flex items-center justify-center space-x-2 shadow-lg"
+                  className="flex-1 border-2 border-purple-500 text-purple-500 font-semibold py-3 px-6 rounded-full hover:bg-purple-50 transition-all flex items-center justify-center space-x-2"
                 >
                   <ShoppingCart className="w-5 h-5" />
                   <span>Adicionar ao Carrinho</span>
                 </button>
                 <button
                   onClick={() => onBuyNow(product)}
-                  className="flex-1 border-2 border-purple-500 text-purple-500 font-semibold py-3 px-6 rounded-full hover:bg-purple-50 transition-all"
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold py-3 px-6 rounded-full hover:from-purple-600 hover:to-blue-600 transition-all shadow-lg"
                 >
                   Comprar Agora
                 </button>
