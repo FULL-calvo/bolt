@@ -54,13 +54,25 @@ export const BecomeSellerModal: React.FC<BecomeSellerModalProps> = ({
       // Create seller profile
       const { error } = await becomeSeller({
         store_name: formData.store_name,
-        store_description: formData.store_description,
+        store_description: formData.store_description
       });
 
       if (error) {
         throw error;
       }
 
+      // Reset form
+      setFormData({
+        store_name: '',
+        cnpj_cpf: '',
+        commercial_phone: '',
+        store_address: '',
+        store_description: '',
+        logo_url: '',
+        main_category: ''
+      });
+      setStep(1);
+      
       onClose();
     } catch (error) {
       console.error('Erro ao criar perfil de vendedor:', error);

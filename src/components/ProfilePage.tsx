@@ -59,9 +59,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
     if (!file) return;
 
     setUploadingAvatar(true);
-    const { error } = await uploadAvatar(file);
-    
-    if (error) {
+    try {
+      const { error } = await uploadAvatar(file);
+      
+      if (error) {
+        console.error('Error uploading avatar:', error);
+        alert('Erro ao fazer upload da imagem. Tente novamente.');
+      }
+    } catch (error) {
       console.error('Error uploading avatar:', error);
       alert('Erro ao fazer upload da imagem. Tente novamente.');
     }
@@ -148,7 +153,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                   )}
                 </label>
               </div>
-              )}
             </div>
             {!isEditing && (
               <div className="mt-4">
