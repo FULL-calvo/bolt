@@ -18,6 +18,7 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({
   const [newComment, setNewComment] = useState('');
   const [comments, setComments] = useState<ProductComment[]>([]);
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const { user, addComment, fetchProductComments } = useAuth();
   
   // Load comments when modal opens
@@ -38,14 +39,15 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({
     e.preventDefault();
     if (!newComment.trim() || !user) return;
 
-    setLoading(true);
-    const { error } = await addComment(product.id, newComment.trim());
+    setSubmitting(true);
     
-    if (!error) {
-      setNewComment('');
-      await loadComments(); // Reload comments to show the new one
-    }
-    setLoading(false);
+    addComment(product.id, newComment.trim()).then(({ error }) => {
+      if (!error) {
+        setNewComment('');
+        loadComments(); // Reload comments to show the new one
+      }
+      setSubmitting(false);
+    });
   };
 
   const formatTime = (timestamp: string) => {
@@ -160,10 +162,10 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({
                     />
                     <button
                       type="submit"
-                      disabled={!newComment.trim() || loading}
+                      disabled={!newComment.trim() || submitting}
                       className="p-2 bg-purple-500 text-white rounded-full hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {loading ? (
+                      {submitting ? (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                       ) : (
                         <Send className="w-4 h-4" />

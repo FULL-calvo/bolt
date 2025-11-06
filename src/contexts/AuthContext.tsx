@@ -73,7 +73,7 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string, fullName: string, role: 'buyer' | 'seller') => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signOut: () => Promise<void>;
+  logout: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: any }>;
   becomeSeller: (storeData: { store_name: string; store_description: string }) => Promise<{ error: any }>;
   backToBuyer: () => Promise<{ error: any }>;
@@ -215,7 +215,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (!error) {
+      // Clear all states
+      setProfile(null);
+      setSellerData(null);
+      setCart([]);
+      setProductLikes([]);
+      setProductComments([]);
+      setMessages([]);
+      setWishlist([]);
+    }
+    return { error };
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
@@ -616,7 +627,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     sendMessage,
     fetchMessages,
     wishlist,
-    toggleWishlist
+    toggleWishlist,
+    uploadAvatar
   };
 
   return (

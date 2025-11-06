@@ -69,7 +69,10 @@ export const VideoCard: React.FC<VideoCardProps> = ({
   const handleLike = async () => {
     if (!user) return;
     
-    await toggleLike(product.id);
+    const { error } = await toggleLike(product.id);
+    if (error) {
+      console.error('Error toggling like:', error);
+    }
     onLike(product.id);
   };
 
